@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ficha Artista | Global Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+  <body>
+    
+    <header class="header">
+      <div class="container header__container">
+        
+        <div class="header__brand">
+          <a href="/" class="header__logo">
+            <img src="/img/globaleventslogo.png" alt="Global Events Logo">
+          </a>
+          <a class="globalevents-navbar" href="index.html">Global Events</a>
+        </div>
+
+        <button class="header__toggle" aria-label="Abrir menú">☰</button>
+
+        <nav class="header__nav">
+          <ul class="header__menu">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">Quiénes Somos</a></li>
+            <li><a href="events.html">Eventos</a></li>
+            <li><a href="contact.html" class="btn btn--gold">Contactar</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main class="artist-page">
+      
+      <section class="artist-header">
+        <div class="container">
+          <a href="index.html" class="back-link">← Volver a la lista</a>
+          <h1 class="artist-name" id="profile-name">Cargando...</h1>
+          <span class="artist-category-tag" id="profile-category">...</span>
+        </div>
+      </section>
+
+      <section class="artist-gallery">
+        <div class="container">
+          <div class="slider-wrapper">
+            <button class="slider-btn slider-btn--prev" id="btn-prev">❮</button>
+            <div class="slider-track" id="slider-track"></div>
+            <button class="slider-btn slider-btn--next" id="btn-next">❯</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="artist-details">
+        <div class="container details-grid">
+          
+          <div class="details-main">
+            <h2 class="details-title">Sobre el Artista</h2>
+            <div class="details-text">
+              <p id="profile-desc">Información no disponible.</p>
+            </div>
+
+            <div class="social-section">
+                <div class="details-links" id="social-links-container"></div>
+            </div>
+          </div>
+
+          <aside class="details-sidebar">
+            <div class="info-card">
+              <h3>Ficha Técnica</h3>
+              <ul>
+                <li><strong>Categoría:</strong> <span id="sidebar-category">-</span></li>
+                <li><strong>Zona:</strong> <span id="profile-zone">-</span></li>
+                </ul>
+              
+              <div class="cta-container">
+                <a href="index.html#contact" class="btn btn--gold">+ INFO</a>
+                <p class="cta-note">Respuesta en menos de 24h</p>
+              </div>
+            </div>
+          </aside>
+
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer" id="contact">
+      <div class="container footer__content">
+        
+        <div class="footer__brand">
+          <img class="logo-footer" style="width: 10em;" src="public/img/logo.png" alt="">
+          <p>Transformamos eventos ordinarios en experiencias extraordinarias. La mejor selección de talento artístico a tu alcance.</p>
+        </div>
+
+        <div class="footer__links">
+          <h4>Explorar</h4>
+          <a href="index.html">Inicio</a>
+          <a href="about.html">La Agencia</a>
+          <a href="events.html">Eventos</a>
+          
+          </div>
+
+        <div class="footer__contact">
+          <h4>Contacto</h4>
+          <a href="mailto:info@rdglobalevents.com">info@rdglobalevents.com</a>
+          <p>+34 622300985</p>
+          <p>C/ Dels pins, Piera</p>
+          
+          <div class="social-links">
+            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="container footer__bottom">
+        <p>&copy; 2026 Global Events. Todos los derechos reservados.</p>
+        <div>
+          <a href="#">Aviso Legal</a> | <a href="#">Privacidad</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

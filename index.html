@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global Events | Professional Solutions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    
+    <header class="header">
+      <div class="container header__container">
+        
+        <div class="header__brand">
+          <a href="/" class="header__logo">
+            <img src="/img/globaleventslogo.png" alt="Global Events Logo">
+          </a>
+          <a class="globalevents-navbar" href="index.html">Global Events</a>
+        </div>
+
+        <button class="header__toggle" aria-label="Abrir menú">☰</button>
+
+        <nav class="header__nav">
+          <ul class="header__menu">
+            <li><a href="#home">Home</a></li>
+            <li><a href="about.html">Quiénes Somos</a></li>
+            <li><a href="events.html">Eventos</a></li>
+            <li><a href="contact.html" class="btn btn--gold">Contactar</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <div class="container hero__content">
+          <img src="/img/logo.png" alt="Global Events logo" class="hero__brand-img">
+          
+          <h1 class="hero__title">GLOBAL EVENTS</h1>
+          <p class="hero__subtitle">Contrata a los mejores artistas para tu evento</p>
+
+          
+
+          <div class="search-bar">
+            
+            <div class="search-bar__group" style="position: relative;"> <label for="search-name" class="visually-hidden">Nombre</label>
+              
+              <input type="text" id="search-name" placeholder="Buscar artista..." autocomplete="off">
+              
+              <ul id="custom-suggestions" class="suggestions-list"></ul>
+            </div>
+            
+            <div class="search-bar__group">
+               <label for="search-category" class="visually-hidden">Categoría</label>
+               <select id="search-category">
+                 <option value="">Todas las categorías</option>
+               </select>
+            </div>
+
+            <button class="btn btn--gold search-bar__btn">Buscar</button>
+          </div>
+          <div class="hero__cta-box">
+            <a href="#contact" class="btn btn--gold"> + Info</a>
+         </div>
+        </div>
+      </section>
+
+      <section class="featured-artists" style="background-color: #050505; position: relative; z-index: 10;">
+        <div class="container"> 
+          <div class="artist-grid" id="artist-grid-container">
+            </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" id="contact">
+      <div class="container footer__content">
+        
+        <div class="footer__brand">
+          <img class="logo-footer" style="width: 10em;" src="public/img/globaleventslogo.png" alt="">
+          <p>Transformamos eventos ordinarios en experiencias extraordinarias. La mejor selección de talento artístico a tu alcance.</p>
+        </div>
+
+        <div class="footer__links">
+          <h4>Explorar</h4>
+          <a href="#home">Inicio</a> 
+          <a href="about.html">La Agencia</a>
+          <a href="events.html">Eventos</a>
+          </div>
+
+        <div class="footer__contact">
+          <h4>Contacto</h4>
+          <a href="mailto:info@rdglobalevents.com">info@rdglobalevents.com</a>
+          <p>+34 622300985</p>
+          <p>C/ Dels pins, Piera</p>
+          
+          <div class="social-links">
+            <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="container footer__bottom">
+        <p>&copy; 2026 Global Events. Todos los derechos reservados.</p>
+        <div>
+          <a href="#">Aviso Legal</a> | <a href="#">Privacidad</a>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

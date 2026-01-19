@@ -1,0 +1,87 @@
+// styles/main.scss
+
+// 1. Settings
+@use "abstracts/variables" as *;
+@use "abstracts/mixins" as *;
+
+// 2. Base
+// @use "base/reset";
+// @use "base/typography";
+
+// 3. Layout
+@use "layout/header";
+@use "layout/hero";
+@use "layout/footer";
+@use "layout/navbar";
+@use "layout/events";
+
+// 4. Components
+@use "components/cards";
+@use "components/buttons";
+
+// PAGES
+@use "pages/artist-detail";
+@use "pages/about";
+@use "pages/login";
+@use "pages/admin";
+@use "pages/contact";
+
+// 5. Estilos Globales
+body {
+  background-color: $color-bg-dark;
+  color: $color-text-primary;
+  font-family: 'Barlow', 'Montserrat', sans-serif;
+  margin: 0;
+}
+
+h1, h2, h3 {
+  font-family: 'Playfair Display', 'Cinzel', serif;
+}
+
+// --- CONTENEDOR GENERAL ---
+.container {
+  width: 90%;
+  // En portátiles normales
+  max-width: 1200px; 
+  margin: 0 auto;
+
+  // En el Monitor 27" de Roxana:
+  // Permitimos que el contenedor general se abra para que el Header y Footer luzcan amplios
+  @media (min-width: $bp-large) {
+    max-width: 1800px; 
+  }
+}
+
+// --- LA SECCIÓN DE ARTISTAS ---
+.featured-artists {
+  position: relative;
+  z-index: 10;
+  background-color: $color-bg-dark;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  box-shadow: 0 -20px 30px rgba(0,0,0,0.5);
+}
+
+// --- EL GRID (QUE EN REALIDAD ES LA BARAJA) ---
+.artist-grid {
+  // Mantenemos SIEMPRE 1 columna para el efecto naipe
+  display: flex;       
+  flex-direction: column;
+  align-items: center; // Centramos las cartas
+  gap: 4rem;           // Espacio entre carta y carta (scroll)
+
+  // AJUSTE PARA MONITOR 27":
+  // Aunque la pantalla sea gigante, limitamos el ancho de la "baraja"
+  // para que la foto no se vea deformada o inmensa.
+  @media (min-width: $bp-large) {
+     width: 100%;
+     max-width: 1100px; // Tamaño "Cine" perfecto para ver la foto sin girar el cuello
+     margin: 0 auto;    // Centrado en la pantalla
+  }
+}
+
+.footer {
+  position: relative;
+  z-index: 10;
+  background-color: #000;
+}
