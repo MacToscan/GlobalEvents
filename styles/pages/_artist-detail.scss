@@ -135,6 +135,7 @@
     @include mq($bp-tablet) {
       grid-template-columns: 2fr 1fr;
       gap: $spacing-unit * 6;
+      padding: 3rem;
     }
   }
 
@@ -260,5 +261,45 @@
         font-style: italic;
       }
     }
+  }
+}
+
+// ... (Todo tu código anterior se queda igual) ...
+
+
+// =========================================
+// 4. AJUSTES PANTALLAS GIGANTES ($bp-large)
+// =========================================
+// Solo se activa si la pantalla es mayor que $bp-large (ej: 1600px)
+
+@media (min-width: $bp-large) {
+
+  // 1. Soltar el freno de anchura (de 1200px a 1500px)
+  .artist-header .header-content,
+  .artist-gallery, // Aplica al contenedor de la galería también
+  .artist-details .details-container-limit {
+     max-width: 1500px; 
+  }
+
+  // 2. Título tamaño "Cine"
+  .artist-header .artist-name {
+    font-size: 6rem; 
+  }
+
+  // 3. Galería Panorámica Gigante (ajuste altura)
+  .artist-gallery .slider-wrapper {
+    max-height: 800px; 
+  }
+
+  // 4. Texto más grande para rellenar mejor
+  .artist-details .details-text {
+    font-size: 1.25rem; 
+    line-height: 2;     
+    max-width: 90%;     
+  }
+
+  // 5. Separar más el Sidebar del Texto
+  .artist-details .details-grid {
+    gap: 100px; 
   }
 }

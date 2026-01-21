@@ -395,7 +395,6 @@
 // FORZAR TIPO TÍTULO EN LOS FORMULARIOS (Capitalize)
 .modal {
   input[type="text"],
-  textarea,
   select {
     // Esto hace que "pepe garcia" se vea "Pepe Garcia"
     text-transform: capitalize; 
@@ -405,6 +404,22 @@
       text-transform: none; 
     }
   }
+
+  // 2. Para la Descripción (textarea) -> ¡NO queremos Mayúsculas!
+  textarea {
+    text-transform: none; 
+  }
+
+  // Excepción: La frase gancho de la portada debe ser libre (minúsculas permitidas)
+#home-edit-desc {
+  text-transform: none !important;
+  
+  &::placeholder {
+     text-transform: none !important;
+  }
+}
+
+  
   
   // Excepción: Los emails y webs suelen ir en minúscula
   #social-instagram,
@@ -414,6 +429,7 @@
     text-transform: lowercase;
   }
 }
+
 
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.98); }

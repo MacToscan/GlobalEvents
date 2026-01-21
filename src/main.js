@@ -1,4 +1,7 @@
 import '../styles/main.scss';
+// IMPORTANTE: Importamos la base de datos y las funciones de Firebase
+import { db } from './firebase.js';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 // ==========================================
 // 🛡️ SEGURIDAD: EL PORTERO VIRTUAL
@@ -36,38 +39,46 @@ if (menuToggle && menuNav) {
 // 1. GESTIÓN DE DATOS Y MIGRACIÓN
 // =========================================================
 
-const defaultData = [
-  { 
-    id: 1001, 
-    name: "Artista Ejemplo", 
-    category: "Música / Show", 
-    zone: "Barcelona", 
-    isFeatured: true, 
-    homeDescription: "La mejor opción para tu boda.",
-    description: "¡Hola Roxana! 👋\n\nEsta es una ficha de ejemplo.\n\nEdita este artista para probar la nueva funcionalidad de la estrella favorita.",
-    images: ["/img/artist/artistfoto.jpeg"], 
-    socials: { instagram: "https://instagram.com", website: "" }
+// =========================================================
+// 1. GESTIÓN DE DATOS (CONECTADO A FIREBASE ☁️)
+// =========================================================
+
+// Iniciamos la lista vacía. Se llenará cuando Google responda.
+let artistsData = []; 
+
+async function loadArtistsFromCloud() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "artists"));
+      artistsData = []; 
+      
+      querySnapshot.forEach((doc) => {
+          artistsData.push({ 
+              id: doc.id, 
+              ...doc.data() 
+          });
+      });
+
+      artistsData.sort((a, b) => (a.order || 999) - (b.order || 999));
+  
+      console.log("📡 Datos descargados de la nube:", artistsData.length);
+      refreshAllViews(); // Pinta la home y el admin
+      
+      // 👇 ¡AÑADE ESTA LÍNEA AQUÍ! 👇
+      // Esto hace que, una vez tenemos datos, se rellene la ficha del artista
+      loadArtistProfile(); 
+  
+    } catch (error) {
+      console.error("❌ Error al descargar datos:", error);
+      alert("Error de conexión con la base de datos");
+    }
   }
-];
 
-let artistsData = JSON.parse(localStorage.getItem('globalEventsArtists'));
-
-if (!artistsData || artistsData.length === 0) {
-    artistsData = defaultData;
-}
-
-// MIGRACIÓN: Aseguramos que existan los campos nuevos
-artistsData = artistsData.map(artist => ({
-    ...artist,
-    isFeatured: artist.isFeatured !== undefined ? artist.isFeatured : false,
-    homeDescription: artist.homeDescription || "",
-    images: artist.images || ["https://via.placeholder.com/400"],
-    socials: artist.socials || {}
-}));
-
+// Esta función antes guardaba en localStorage. 
+// Ahora la dejamos vacía o "tonta" de momento para que no rompa el código antiguo
+// hasta que migremos el borrado y la edición.
 function saveToStorage() {
-  localStorage.setItem('globalEventsArtists', JSON.stringify(artistsData));
-  refreshAllViews();
+  console.log("⚠️ saveToStorage ya no se usa. Los cambios deben ir a Firebase.");
+  // refreshAllViews(); // Ya no hace falta refrescar aquí
 }
 
 function refreshAllViews() {
@@ -77,7 +88,7 @@ function refreshAllViews() {
   const featuredArtists = artistsData.filter(a => a.isFeatured);
   
   renderHomeArtists(featuredArtists); 
-  renderHomeEditor(featuredArtists); // Aquí está la lógica de arrastrar
+  renderHomeEditor(featuredArtists); 
   renderAdminList(artistsData);      
 }
 
@@ -221,17 +232,37 @@ function initProfileSlider() {
 // 4. ADMIN: GESTIÓN DE ESTRELLAS Y LISTAS
 // ==========================================
 
-window.toggleFeatured = (id) => {
+window.toggleFeatured = async (id) => {
+    // 1. Buscamos el artista en memoria
     const artist = artistsData.find(a => a.id === id);
     if (!artist) return;
 
+    // 2. Control de límite (máximo 6)
     const currentFeaturedCount = artistsData.filter(a => a.isFeatured).length;
     if (!artist.isFeatured && currentFeaturedCount >= 6) {
-        alert("⚠️ ¡Límite alcanzado!\n\nSolo puedes tener 6 artistas en la portada.");
+        alert("⚠️ ¡Límite alcanzado! Solo puedes tener 6 en portada.");
         return;
     }
-    artist.isFeatured = !artist.isFeatured;
-    saveToStorage();
+
+    try {
+        // 3. CAMBIAMOS EL ESTADO EN LA NUBE ☁️
+        const newStatus = !artist.isFeatured;
+        
+        // Referencia al documento en Firestore
+        const artistRef = doc(db, "artists", id);
+        
+        // Actualizamos solo el campo 'isFeatured'
+        await updateDoc(artistRef, {
+            isFeatured: newStatus
+        });
+
+        console.log("⭐️ Estado actualizado en Firebase");
+        loadArtistsFromCloud(); // Recargamos para ver el cambio
+
+    } catch (error) {
+        console.error("Error al actualizar estrella:", error);
+        alert("No se pudo cambiar el estado destacado.");
+    }
 };
 
 function renderAdminList(list) {
@@ -252,11 +283,11 @@ function renderAdminList(list) {
             <p>${artist.category}</p>
         </div>
         <div class="admin-card__actions">
-          <button onclick="window.toggleFeatured(${artist.id})" style="background:none; border:none; font-size:1.2rem; cursor:pointer; margin-right:10px;">
+          <button onclick="window.toggleFeatured('${artist.id}')" style="background:none; border:none; font-size:1.2rem; cursor:pointer; margin-right:10px;">
             <i class="${starClass}" style="${starColor}"></i>
           </button>
-          <button onclick="window.openEditModal(${artist.id})"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn-delete" onclick="window.deleteArtist(${artist.id})"><i class="fa-solid fa-trash"></i></button>
+          <button onclick="window.openEditModal('${artist.id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-delete" onclick="window.deleteArtist('${artist.id}')"><i class="fa-solid fa-trash"></i></button>
         </div>
       </article>
     `}).join('');
@@ -285,7 +316,7 @@ function renderHomeEditor(list) {
             <h4>${artist.name}</h4>
             <span style="font-size:0.8rem; color:#aaa;">"${artist.homeDescription || 'Sin frase'}"</span>
          </div>
-         <button class="btn-edit-mini" onclick="window.openHomeEditModal(${artist.id})">
+         <button class="btn-edit-mini" onclick="window.openHomeEditModal('${artist.id}')">
             <i class="fa-solid fa-image"></i> EDITAR PORTADA
          </button>
       </div>
@@ -297,7 +328,6 @@ function renderHomeEditor(list) {
 
 function initSortable() {
     const el = document.getElementById('home-artist-list');
-    // Verificar si existe la librería Sortable (para que no rompa si falla el script)
     if (!el || typeof Sortable === 'undefined') return;
 
     if (el._sortable) el._sortable.destroy();
@@ -305,18 +335,47 @@ function initSortable() {
     el._sortable = new Sortable(el, {
         animation: 150,
         ghostClass: 'sortable-ghost',
-        delay: 200, 
-        delayOnTouchOnly: true,
-        onEnd: function (evt) {
-            // Reordenar array maestro
+        delay: 0, // ⚡️ HE PUESTO 0: Arrastra al instante (antes era 200)
+        delayOnTouchOnly: true, 
+        
+        // Cuando terminas de arrastrar...
+        onEnd: async function (evt) {
+            // 1. Miramos el nuevo orden visual en la pantalla
             const itemEls = el.querySelectorAll('.home-edit-card');
-            const newOrderIds = Array.from(itemEls).map(item => parseInt(item.getAttribute('data-id')));
-
-            const reorderedFeatured = newOrderIds.map(id => artistsData.find(a => a.id === id));
-            const others = artistsData.filter(a => !newOrderIds.includes(a.id));
             
-            artistsData = [...reorderedFeatured, ...others];
-            saveToStorage();
+            // ⚠️ CORRECCIÓN CLAVE: Quitamos 'parseInt' porque los IDs ahora son letras
+            const newOrderIds = Array.from(itemEls).map(item => item.getAttribute('data-id'));
+
+            // 2. Feedback visual inmediato (actualizamos las etiquetas POS 1, POS 2...)
+            itemEls.forEach((item, index) => {
+                const badge = item.querySelector('.pos-badge');
+                if(badge) badge.textContent = `POS ${index + 1}`;
+            });
+
+            // 3. ☁️ GUARDAR EN GOOGLE (La Magia)
+            // Recorremos la lista y le decimos a Google: "Tú eres el 0, tú el 1, tú el 2..."
+            try {
+                const updates = newOrderIds.map((id, index) => {
+                    const docRef = doc(db, "artists", id);
+                    return updateDoc(docRef, { order: index }); // Guardamos el campo 'order'
+                });
+
+                // Esperamos a que todos se guarden
+                await Promise.all(updates);
+                console.log("✅ Orden actualizado en la nube");
+                
+                // Actualizamos nuestra memoria local también para no tener que recargar
+                // (Truco para que se sienta rápido)
+                newOrderIds.forEach((id, index) => {
+                    const a = artistsData.find(x => x.id === id);
+                    if(a) a.order = index;
+                });
+                artistsData.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            } catch (error) {
+                console.error("Error al guardar orden:", error);
+                alert("Hubo un error al guardar el orden. Recarga la página.");
+            }
         }
     });
 }
@@ -363,22 +422,50 @@ window.selectCoverImage = (index) => {
 };
 
 if (homeForm) {
-    homeForm.addEventListener('submit', (e) => {
+    homeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // 1. Recogemos los datos del formulario
         const id = document.getElementById('home-edit-id').value;
         const newDesc = document.getElementById('home-edit-desc').value;
-        
+        const btnSubmit = homeForm.querySelector('button[type="submit"]');
+
+        // Buscamos al artista en memoria para manipular sus fotos
         const idx = artistsData.findIndex(a => a.id == id);
-        if (idx !== -1) {
-            let artist = artistsData[idx];
-            artist.homeDescription = newDesc;
-            if (tempSelectedCoverIndex > 0) {
-                const selectedImage = artist.images[tempSelectedCoverIndex];
-                artist.images.splice(tempSelectedCoverIndex, 1);
-                artist.images.unshift(selectedImage);
-            }
-            saveToStorage();
+        if (idx === -1) return;
+
+        let artist = artistsData[idx];
+        let updatedImages = [...artist.images]; // Copia de las fotos actuales
+
+        // Si eligió una foto nueva para portada, la movemos a la posición 0
+        if (tempSelectedCoverIndex > 0) {
+            const selectedImage = updatedImages[tempSelectedCoverIndex];
+            updatedImages.splice(tempSelectedCoverIndex, 1); // La quitamos de donde esté
+            updatedImages.unshift(selectedImage); // La ponemos primera
+        }
+
+        // 2. ENVIAMOS A GOOGLE ☁️
+        btnSubmit.textContent = "Guardando...";
+        btnSubmit.disabled = true;
+
+        try {
+            const artistRef = doc(db, "artists", id);
+            
+            await updateDoc(artistRef, {
+                homeDescription: newDesc, // Guardamos la frase
+                images: updatedImages     // Guardamos el nuevo orden de fotos
+            });
+
+            console.log("✅ Portada actualizada en la nube");
+            loadArtistsFromCloud(); // Recargamos la web
             homeModal.classList.remove('is-visible');
+
+        } catch (error) {
+            console.error("Error al actualizar portada:", error);
+            alert("Error: " + error.message);
+        } finally {
+            btnSubmit.textContent = "Guardar Portada";
+            btnSubmit.disabled = false;
         }
     });
 }
@@ -449,18 +536,40 @@ if (btnAdd) {
     });
 }
 
+// ==========================================
+// NUEVO SISTEMA DE GUARDADO (FIREBASE CLOUD ☁️)
+// ==========================================
 if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => { // ⚠️ Nota el 'async' aquí
         e.preventDefault();
+
+        // 1. Feedback visual (Para que sepa que está pensando)
+        const btnSubmit = form.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.textContent;
+        btnSubmit.textContent = "Subiendo a la nube...";
+        btnSubmit.disabled = true;
+
+        // 2. Preparar los datos
         const id = document.getElementById('artist-id').value;
         if (currentGallery.length === 0) currentGallery.push("https://via.placeholder.com/400?text=Sin+Foto");
 
-        const newData = {
-            name: document.getElementById('artist-name').value,
-            category: document.getElementById('artist-category').value,
-            zone: document.getElementById('artist-zone').value,
-            description: document.getElementById('description').value,
+        const toTitleCase = (str) => {
+            return str.replace(/\w\S*/g, (txt) => {
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        };
+
+       const artistData = {
+            // ⚠️ AQUÍ ESTABA EL FALLO: Faltaba usar la función 'toTitleCase(...)'
+            name: toTitleCase(document.getElementById('artist-name').value),
+            category: toTitleCase(document.getElementById('artist-category').value),
+            zone: toTitleCase(document.getElementById('artist-zone').value),
+            
+            description: document.getElementById('description').value, // Este NO se toca (queremos libertad)
             images: currentGallery,
+            // Estos campos son obligatorios para que no falle la web luego
+            isFeatured: false, 
+            homeDescription: "",
             socials: {
                 instagram: document.getElementById('social-instagram').value,
                 facebook: document.getElementById('social-facebook').value,
@@ -469,22 +578,37 @@ if (form) {
             }
         };
 
-        if (id) {
-            const idx = artistsData.findIndex(a => a.id == id);
-            if (idx !== -1) {
-                artistsData[idx] = { ...artistsData[idx], ...newData };
+        try {
+            if (id) {
+                // --- MODO EDITAR (Lo activaremos luego) ---
+                // De momento, como estamos migrando, no editaremos los viejos del localStorage
+                alert("⚠️ Estamos en transición a la nube. Por ahora, prueba a crear un artista NUEVO.");
+            } else {
+                // --- MODO CREAR (NUEVO) ☁️ ---
+                // Aquí ocurre la magia: 'addDoc' envía los datos a Google
+                const docRef = await addDoc(collection(db, "artists"), artistData);
+                console.log("✅ Artista guardado en Firestore con ID: ", docRef.id);
+                alert("¡Artista guardado en la nube correctamente!");
+                loadArtistsFromCloud(); // <--- AÑADE ESTA LÍNEA MÁGICA ✨
             }
-        } else {
-            artistsData.unshift({ 
-                id: Date.now(), 
-                isFeatured: false, 
-                homeDescription: "",
-                ...newData 
-            });
+
+            // Cerrar y limpiar
+            modal.classList.remove('is-visible');
+            form.reset();
+            currentGallery = [];
+            
+            // ⚠️ OJO: La lista de atrás NO se actualizará sola todavía 
+            // porque sigue leyendo del localStorage.
+            // Eso lo arreglaremos en el siguiente paso (Lectura).
+            
+        } catch (error) {
+            console.error("❌ Error al guardar en Firebase:", error);
+            alert("Hubo un error: " + error.message);
+        } finally {
+            // Restaurar botón
+            btnSubmit.textContent = originalText;
+            btnSubmit.disabled = false;
         }
-        saveToStorage();
-        modal.classList.remove('is-visible');
-        alert('¡Guardado!');
     });
 }
 
@@ -495,10 +619,23 @@ document.querySelectorAll('.modal__close, #cancel-modal, #cancel-home-modal').fo
     })
 );
 
-window.deleteArtist = (id) => {
-    if (!confirm('¿Seguro que quieres borrar este artista?')) return;
-    artistsData = artistsData.filter(a => a.id !== id);
-    saveToStorage();
+window.deleteArtist = async (id) => {
+    if (!confirm('¿Seguro que quieres borrar este artista de la nube?')) return;
+
+    try {
+        // 1. Borramos el documento en Google usando su ID
+        await deleteDoc(doc(db, "artists", id));
+        
+        console.log("🗑️ Artista eliminado de Firestore");
+        
+        // 2. Recargamos la lista para que desaparezca de la pantalla
+        loadArtistsFromCloud();
+        alert("¡Artista eliminado correctamente!");
+
+    } catch (error) {
+        console.error("Error al borrar:", error);
+        alert("No se pudo borrar: " + error.message);
+    }
 };
 
 if (document.getElementById('admin-search')) {
@@ -577,6 +714,10 @@ if (contactForm) {
 }
 
 // INICIO
-refreshAllViews();
+// 1. Primero intentamos cargar perfil (si estamos en artist.html)
 loadArtistProfile();
-console.log('App Ready: SECURE VERSION 🔒');
+
+// 2. Y lanzamos la petición a la nube para llenar las listas
+loadArtistsFromCloud(); 
+
+console.log('App Ready: CLOUD VERSION ☁️');
