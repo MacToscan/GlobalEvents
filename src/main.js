@@ -119,7 +119,9 @@ function renderHomeArtists(list) {
   gridContainer.innerHTML = list.map(artist => `
     <article class="card">
       <div class="card__img-wrapper">
-        <img src="${artist.images[0]}" alt="${artist.name}" class="card__image" loading="lazy">
+        <a href="/artist.html?id=${artist.id}" aria-label="Ver ficha de ${artist.name}" style="display:block; width:100%; height:100%;">
+           <img src="${artist.images[0]}" alt="${artist.name}" class="card__image" loading="lazy">
+        </a>
       </div>
       <div class="card__content">
         ${ artist.homeDescription 
@@ -135,14 +137,24 @@ function renderHomeArtists(list) {
 }
 
 function executeSearch() {
+    // 1. Leemos lo que ha escrito (antes de borrarlo)
     const nameVal = searchInput.value.toLowerCase();
     const catVal = searchCat.value;
+
+    // 2. Filtramos los datos
     const filtered = artistsData.filter(a => a.name.toLowerCase().includes(nameVal) && (catVal === "" || a.category === catVal));
+    
+    // Solo mostramos los destacados en la home (si esa es la lógica que quieres mantener)
     const featuredFiltered = filtered.filter(a => a.isFeatured);
     renderHomeArtists(featuredFiltered);
     
+    // 3. Ocultamos sugerencias y hacemos scroll
     if (suggestionsBox) suggestionsBox.style.display = 'none';
     if (gridContainer) setTimeout(() => gridContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+
+    // 👇 4. LIMPIEZA AUTOMÁTICA (LO NUEVO)
+    searchInput.value = ''; 
+    searchInput.blur(); // Quitamos el foco para que se esconda el teclado en el móvil
 }
 
 if(searchBtn) searchBtn.addEventListener('click', executeSearch);
@@ -191,7 +203,13 @@ function loadArtistProfile() {
         if (s.facebook) links.innerHTML += `<a href="${s.facebook}" target="_blank" class="link-item"><i class="fa-brands fa-facebook"></i> Facebook</a>`;
         if (s.website) links.innerHTML += `<a href="${s.website}" target="_blank" class="link-item"><i class="fa-solid fa-globe"></i> Web</a>`;
         if (s.youtube) links.innerHTML += `<a href="${s.youtube}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video</a>`;
-
+        if (artist.videoUrl2) {
+            links.innerHTML += `<a href="${artist.videoUrl2}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video 2</a>`;
+        }
+        
+        if (artist.videoUrl3) {
+            links.innerHTML += `<a href="${artist.videoUrl3}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video 3</a>`;
+        }
         const track = document.getElementById('slider-track');
         track.innerHTML = '';
         if(artist.images && artist.images.length > 0) {
@@ -518,6 +536,12 @@ window.openEditModal = (id) => {
     document.getElementById('social-facebook').value = s.facebook || "";
     document.getElementById('social-website').value = s.website || "";
     document.getElementById('social-youtube').value = s.youtube || "";
+    if(document.getElementById('video2')) {
+        document.getElementById('video2').value = artist.videoUrl2 || "";
+    }
+    if(document.getElementById('video3')) {
+        document.getElementById('video3').value = artist.videoUrl3 || "";
+    }
 
     currentGallery = [...artist.images];
     renderGalleryPreview();
@@ -567,6 +591,9 @@ if (form) {
             
             description: document.getElementById('description').value, // Este NO se toca (queremos libertad)
             images: currentGallery,
+            videoUrl: document.getElementById('social-youtube').value, 
+            videoUrl2: document.getElementById('video2') ? document.getElementById('video2').value : "",
+            videoUrl3: document.getElementById('video3') ? document.getElementById('video3').value : "",
             // Estos campos son obligatorios para que no falle la web luego
             isFeatured: false, 
             homeDescription: "",
@@ -574,15 +601,31 @@ if (form) {
                 instagram: document.getElementById('social-instagram').value,
                 facebook: document.getElementById('social-facebook').value,
                 website: document.getElementById('social-website').value,
-                youtube: document.getElementById('social-youtube').value,
+                //youtube: document.getElementById('social-youtube').value,
             }
         };
 
         try {
             if (id) {
-                // --- MODO EDITAR (Lo activaremos luego) ---
-                // De momento, como estamos migrando, no editaremos los viejos del localStorage
-                alert("⚠️ Estamos en transición a la nube. Por ahora, prueba a crear un artista NUEVO.");
+                // --- MODO EDITAR (ACTIVADO) ☁️ ---
+                const docRef = doc(db, "artists", id);
+                
+                // ⚠️ TRUCO DE SEGURIDAD:
+                // Hacemos una copia de los datos del formulario, pero borramos 
+                // las propiedades 'isFeatured' y 'homeDescription'.
+                // ¿Por qué? Para que al editar el nombre o la foto, NO se nos borre
+                // si el artista estaba en portada o tenía una frase especial.
+                const updateData = { ...artistData };
+                delete updateData.isFeatured;
+                delete updateData.homeDescription;
+                // delete updateData.order; // (Opcional, por si acaso)
+
+                await updateDoc(docRef, updateData);
+                
+                console.log("✅ Artista actualizado en la nube");
+                alert("¡Ficha modificada correctamente!");
+                loadArtistsFromCloud(); // Refresca la pantalla
+                
             } else {
                 // --- MODO CREAR (NUEVO) ☁️ ---
                 // Aquí ocurre la magia: 'addDoc' envía los datos a Google
@@ -711,6 +754,47 @@ if (contactForm) {
             btn.disabled = false;
         }, 1500);
     });
+}
+
+// ==========================================
+// 10. LENIS SCROLL (MODO PREMIUM) 🌊
+// ==========================================
+
+// Comprobamos si Lenis se ha cargado correctamente desde el HTML
+if (typeof Lenis !== 'undefined') {
+    
+    const lenis = new Lenis({
+        duration: 1.2,       // Cuánto tarda en frenar (más alto = más suave)
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Curva de física
+        direction: 'vertical', 
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1,  // Sensibilidad de la rueda
+        smoothTouch: false,  // ⚠️ IMPORTANTE: En móvil lo dejamos nativo (false)
+        touchMultiplier: 2,
+    });
+
+    // Esta función hace que Lenis actualice el movimiento en cada frame
+    function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    console.log("🌊 Lenis Scroll activado: Modo fluido ON");
+    
+    // TRUCO EXTRA: Conectar los anclas (links) con Lenis
+    // Esto hace que si pulsas "Contactar", baje suavemente usando Lenis
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            lenis.scrollTo(this.getAttribute('href'));
+        });
+    });
+
+} else {
+    console.warn("⚠️ Lenis no se ha cargado. Revisa el index.html");
 }
 
 // INICIO

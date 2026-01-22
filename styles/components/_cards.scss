@@ -63,49 +63,81 @@
   }
 
   // --- TEXTO / CONTENIDO ---
+  // --- TEXTO / CONTENIDO ---
   &__content {
-    padding: 20px;
+    // 1. PADDING REDUCIDO
+    // Bajamos a 20px/25px para ganar el máximo espacio posible para el texto
+    padding: 20px; 
+    
     display: flex;
     flex-direction: column;
-    justify-content: center; // Centra el texto verticalmente
-    align-items: flex-start;
-    background: linear-gradient(to bottom, #1a1a1a, #111);
     
-    // Si el texto es muy largo, lo cortamos con puntos suspensivos para no romper la caja
+    // 2. LA ESTRUCTURA FLEXIBLE
+    // Esto hace que los elementos se distribuyan usando todo el alto disponible
+    justify-content: flex-start; 
+    align-items: flex-start;
+    
+    background: linear-gradient(to bottom, #1a1a1a, #111);
     overflow: hidden; 
 
     @include mq($bp-desktop) {
-      padding: 40px; 
+      padding: 25px 30px; 
     }
   }
 
+  // --- ARRIBA: La Frase Gancho ---
   &__category {
     color: #BF953F;
     text-transform: uppercase;
     font-size: 0.8rem;
+    padding-top: $spacing-l;
     letter-spacing: 2px;
-    margin-bottom: 10px;
+    margin-bottom: 10px; // Un poco de aire antes del nombre
     font-weight: 700;
+    width: 100%;
   }
 
+  // --- MEDIO: El Nombre del Artista ---
   &__title {
     font-family: $font-heading;
+    padding-top: $spacing-xl *6;
     color: white;
-    font-size: 1.8rem;
-    margin: 0 0 15px;
+    font-size: 1.5rem;
     line-height: 1.1;
+    margin: 0 0 10px;
 
-    // Limitamos el título a 2 líneas máximo para seguridad
+    // ✨ TRUCO: flex-grow: 1
+    // Esto le dice al título: "Ocupa todo el espacio libre que haya en medio".
+    // Si el nombre es corto, dejará hueco. Si es largo, usará el hueco.
+    // (Ojo: solo funciona si el contenedor padre tiene altura fija, que ya la tiene)
+    // flex-grow: 1; 
+    // ^ A veces flex-grow puede dar problemas de centrado, mejor dejamos que fluya natural
+    // y usamos el margin-top auto en el botón.
+
+    // SEGURO ANTI-DESBORDAMIENTO:
+    // Permitimos hasta 4 líneas si hace falta, ya que ahora tenemos sitio.
     display: -webkit-box;
-    line-clamp: 2;
+    line-clamp: 4; 
     -webkit-box-orient: vertical;
     overflow: hidden;
 
     @include mq($bp-desktop) {
-      font-size: 2.5rem; 
+      // Usamos clamp para que se adapte al ancho
+      font-size: clamp(1.7rem, 2.2vw, 2.2rem); 
     }
   }
 
+  // Descripción extra (si existe)
+  p {
+     font-size: 0.9rem;
+     padding-top: $spacing-xl;
+     color: #ccc;
+     margin-bottom: 15px;
+     display: -webkit-box;
+     line-clamp: 2;
+     -webkit-box-orient: vertical;
+     overflow: hidden;
+  }
   &__zone {
     color: #888;
     font-size: 0.9rem;
@@ -114,4 +146,15 @@
     align-items: center;
     gap: 5px;
   }
+
+  // --- ABAJO: El Botón ---
+  .btn {
+    // ✨ LA CLAVE MAESTRA:
+    // 'margin-top: auto' es como un imán que empuja el botón al fondo del todo,
+    // independientemente de cuánto texto haya arriba.
+    margin-top: auto; 
+    padding-top: $spacing-xl;
+    align-self: flex-start;
+  }
+
 }
