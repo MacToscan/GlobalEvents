@@ -58,7 +58,7 @@ async function loadArtistsFromCloud() {
           });
       });
 
-      artistsData.sort((a, b) => (a.order || 999) - (b.order || 999));
+      artistsData.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   
       console.log("📡 Datos descargados de la nube:", artistsData.length);
       refreshAllViews(); // Pinta la home y el admin
@@ -388,7 +388,7 @@ function initSortable() {
                     const a = artistsData.find(x => x.id === id);
                     if(a) a.order = index;
                 });
-                artistsData.sort((a, b) => (a.order || 0) - (b.order || 0));
+                artistsData.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
             } catch (error) {
                 console.error("Error al guardar orden:", error);
