@@ -7,7 +7,7 @@
   border-radius: 12px;
   overflow: hidden;
   position: sticky; 
-  top: 100px;       
+  top: 10%;       
   margin-bottom: 40px; 
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   transition: transform 0.3s ease;
@@ -100,7 +100,7 @@
   // --- MEDIO: El Nombre del Artista ---
   &__title {
     font-family: $font-heading;
-    padding-top: $spacing-xl *6;
+    padding-top: $spacing-xl *2;
     color: white;
     font-size: 1.5rem;
     line-height: 1.1;
@@ -130,7 +130,7 @@
   // Descripción extra (si existe)
   p {
      font-size: 0.9rem;
-     padding-top: $spacing-xl;
+     padding-top: $spacing-l;
      color: #ccc;
      margin-bottom: 15px;
      display: -webkit-box;
