@@ -137,24 +137,45 @@ function renderHomeArtists(list) {
 }
 
 function executeSearch() {
-    // 1. Leemos lo que ha escrito (antes de borrarlo)
-    const nameVal = searchInput.value.toLowerCase();
+    // 1. Leemos lo que ha escrito
+    const nameVal = searchInput.value.toLowerCase().trim(); // Añadido trim() para quitar espacios accidentales
     const catVal = searchCat.value;
 
-    // 2. Filtramos los datos
-    const filtered = artistsData.filter(a => a.name.toLowerCase().includes(nameVal) && (catVal === "" || a.category === catVal));
+    // 2. Filtramos TODA la base de datos (sin importar si es destacado o no)
+    // Buscamos coincidencia de nombre Y categoría
+    const foundArtists = artistsData.filter(a => a.name.toLowerCase().includes(nameVal) && (catVal === "" || a.category === catVal));
     
-    // Solo mostramos los destacados en la home (si esa es la lógica que quieres mantener)
-    const featuredFiltered = filtered.filter(a => a.isFeatured);
-    renderHomeArtists(featuredFiltered);
-    
-    // 3. Ocultamos sugerencias y hacemos scroll
-    if (suggestionsBox) suggestionsBox.style.display = 'none';
-    if (gridContainer) setTimeout(() => gridContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    // 3. DECISIÓN: ¿QUÉ MOSTRAMOS?
+    // Verificamos si el usuario realmente está buscando algo (escribió texto o eligió categoría)
+    const isSearching = nameVal !== "" || catVal !== "";
 
-    // 👇 4. LIMPIEZA AUTOMÁTICA (LO NUEVO)
-    searchInput.value = ''; 
-    searchInput.blur(); // Quitamos el foco para que se esconda el teclado en el móvil
+    if (isSearching) {
+        // 🔍 MODO BÚSQUEDA: Mostramos TODOS los resultados encontrados (aunque no estén en portada)
+        renderHomeArtists(foundArtists);
+        
+        // Si no hay resultados, mostramos un aviso
+        if (foundArtists.length === 0 && gridContainer) {
+             gridContainer.innerHTML = '<p style="color:#888; width:100%; text-align:center; padding: 40px;">No se encontraron artistas con esos criterios.</p>';
+        }
+
+    } else {
+        // 🏠 MODO HOME (Buscador vacío): Solo mostramos los DESTACADOS (Portada)
+        const featuredOnly = foundArtists.filter(a => a.isFeatured);
+        renderHomeArtists(featuredOnly);
+    }
+    
+    // 4. UI: Ocultamos sugerencias y hacemos scroll
+    if (suggestionsBox) suggestionsBox.style.display = 'none';
+    if (gridContainer && isSearching) {
+        setTimeout(() => gridContainer.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+
+    // 5. LIMPIEZA AUTOMÁTICA (Lo que pediste ayer)
+    // Solo borramos el texto si escribió algo, para que no tenga que borrarlo a mano
+    if (nameVal !== "") {
+        searchInput.value = ''; 
+        searchInput.blur(); 
+    }
 }
 
 if(searchBtn) searchBtn.addEventListener('click', executeSearch);
