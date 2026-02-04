@@ -66,6 +66,8 @@ async function loadArtistsFromCloud() {
       // 👇 ¡AÑADE ESTA LÍNEA AQUÍ! 👇
       // Esto hace que, una vez tenemos datos, se rellene la ficha del artista
       loadArtistProfile(); 
+
+      initMiniCarousel();
   
     } catch (error) {
       console.error("❌ Error al descargar datos:", error);
@@ -817,6 +819,101 @@ if (typeof Lenis !== 'undefined') {
 } else {
     console.warn("⚠️ Lenis no se ha cargado. Revisa el index.html");
 }
+
+// ==========================================
+// 11. CARRUSEL INFINITO (LÓGICA DE BARAJA) 🎠
+// ==========================================
+
+function initMiniCarousel() {
+    const track = document.getElementById('mini-carousel-track');
+    const section = document.querySelector('.other-talents-section');
+    if (!track) return;
+
+    // 1. OBTENER LISTA BASE (Solo los NO destacados)
+    let baseList = artistsData.filter(a => !a.isFeatured);
+
+    // Si no hay nadie, ocultamos la sección y nos vamos
+    if (baseList.length === 0) {
+        if (section) section.style.display = 'none';
+        return;
+    }
+
+    // 2. CONSTRUIR LA LISTA DE VISUALIZACIÓN ("BARAJA INTELIGENTE")
+    // Queremos generar una lista lo suficientemente larga para que haya scroll,
+    // pero respetando el ciclo: "No repetir hasta mostrar todos".
+    
+    let finalDisplayList = [];
+    const minItemsNeeded = 12; // Queremos tener al menos 12 tarjetas en cola para que ruede bien
+
+    // Función para barajar una copia de la lista (Fisher-Yates simplificado)
+    const getShuffledBatch = () => {
+        return [...baseList].sort(() => Math.random() - 0.5);
+    };
+
+    // Agregamos el primer lote
+    finalDisplayList = getShuffledBatch();
+
+    // Seguimos agregando lotes completos hasta tener suficientes items
+    while (finalDisplayList.length < minItemsNeeded) {
+        let nextBatch = getShuffledBatch();
+
+        // 🧠 LA CLAVE ANTI-REPETICIÓN: 
+        // Chequeamos la "costura": Si el último del lote anterior es igual al primero del nuevo.
+        // Ejemplo: Lote 1 acaba en [Pepe]. Lote 2 empieza por [Pepe].
+        if (finalDisplayList.length > 0 && nextBatch.length > 1) {
+            const lastArtist = finalDisplayList[finalDisplayList.length - 1];
+            const firstNextArtist = nextBatch[0];
+
+            if (lastArtist.id === firstNextArtist.id) {
+                // Si coinciden, movemos el primero del nuevo lote al final.
+                // Así: [Pepe] + [Pepe, Juan] se convierte en [Pepe] + [Juan, Pepe]
+                nextBatch.push(nextBatch.shift());
+            }
+        }
+
+        finalDisplayList = [...finalDisplayList, ...nextBatch];
+    }
+
+    // 3. PINTAR LAS TARJETAS
+    track.innerHTML = finalDisplayList.map(artist => `
+        <a href="/artist.html?id=${artist.id}" class="mini-card" style="text-decoration:none;">
+            <div class="mini-card__img-wrapper">
+                <img src="${artist.images[0]}" alt="${artist.name}" class="mini-card__img" loading="lazy">
+            </div>
+            <div class="mini-card__info">
+                <span class="mini-card__cat">${artist.category}</span>
+                <h4 class="mini-card__name">${artist.name}</h4>
+                <div class="mini-card__zone"><i class="fa-solid fa-location-dot"></i> ${artist.zone}</div>
+            </div>
+        </a>
+    `).join('');
+
+    // 4. ANIMACIÓN INFINITA
+    // Clonamos el HTML generado para crear el efecto de bucle visual
+    const wrapper = document.querySelector('.mini-carousel-wrapper');
+    track.innerHTML += track.innerHTML; // Duplicamos todo lo que acabamos de generar
+
+    // Cancelamos animación anterior si existiera para no acelerar
+    if (window.carouselFrame) cancelAnimationFrame(window.carouselFrame);
+
+    let scrollPos = 0;
+    const speed = 0.5; // Velocidad del desplazamiento
+
+    function animateCarousel() {
+        scrollPos += speed;
+        
+        // Punto de reinicio invisible
+        if (scrollPos >= track.scrollWidth / 2) {
+            scrollPos = 0;
+        }
+        
+        if(wrapper) wrapper.scrollLeft = scrollPos;
+        window.carouselFrame = requestAnimationFrame(animateCarousel);
+    }
+
+    window.carouselFrame = requestAnimationFrame(animateCarousel);
+}
+
 
 // INICIO
 // 1. Primero intentamos cargar perfil (si estamos en artist.html)
