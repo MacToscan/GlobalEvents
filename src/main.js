@@ -1,7 +1,11 @@
+// AL PRINCIPIO DE src/main.js
+
 import '../styles/main.scss';
-// IMPORTANTE: Importamos la base de datos y las funciones de Firebase
-import { db } from './firebase.js';
+// 👇 AÑADIMOS 'storage' AQUÍ
+import { db, storage } from './firebase.js'; 
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+// 👇 AÑADIMOS ESTAS 3 HERRAMIENTAS NUEVAS:
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // ==========================================
 // 🛡️ SEGURIDAD: EL PORTERO VIRTUAL
@@ -203,6 +207,8 @@ if(searchInput) {
 // ==========================================
 // 3. FICHA ARTISTA
 // ==========================================
+// EN: src/main.js
+
 function loadArtistProfile() {
     const profileName = document.getElementById('profile-name');
     if (!profileName) return; 
@@ -221,11 +227,23 @@ function loadArtistProfile() {
 
         const links = document.getElementById('social-links-container');
         links.innerHTML = '';
-        const s = artist.socials || {};
+        
+        const s = artist.socials || {}; // Redes sociales
+
+        // 1. REDES SOCIALES
         if (s.instagram) links.innerHTML += `<a href="${s.instagram}" target="_blank" class="link-item"><i class="fa-brands fa-instagram"></i> Instagram</a>`;
         if (s.facebook) links.innerHTML += `<a href="${s.facebook}" target="_blank" class="link-item"><i class="fa-brands fa-facebook"></i> Facebook</a>`;
         if (s.website) links.innerHTML += `<a href="${s.website}" target="_blank" class="link-item"><i class="fa-solid fa-globe"></i> Web</a>`;
-        if (s.youtube) links.innerHTML += `<a href="${s.youtube}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video</a>`;
+
+        // 2. VIDEO PRINCIPAL (Aquí estaba el fallo) 🛠️
+        // Buscamos en 'artist.videoUrl' (donde se guarda ahora) O en 's.youtube' (por si es antiguo)
+        const mainVideo = artist.videoUrl || s.youtube;
+        
+        if (mainVideo) {
+            links.innerHTML += `<a href="${mainVideo}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video 1</a>`;
+        }
+        
+        // 3. VIDEOS EXTRA
         if (artist.videoUrl2) {
             links.innerHTML += `<a href="${artist.videoUrl2}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video 2</a>`;
         }
@@ -233,6 +251,8 @@ function loadArtistProfile() {
         if (artist.videoUrl3) {
             links.innerHTML += `<a href="${artist.videoUrl3}" target="_blank" class="link-item"><i class="fa-brands fa-youtube"></i> Video 3</a>`;
         }
+        
+        // --- GALERÍA DE FOTOS ---
         const track = document.getElementById('slider-track');
         track.innerHTML = '';
         if(artist.images && artist.images.length > 0) {
@@ -586,92 +606,137 @@ if (btnAdd) {
 // ==========================================
 // NUEVO SISTEMA DE GUARDADO (FIREBASE CLOUD ☁️)
 // ==========================================
+
 if (form) {
-    form.addEventListener('submit', async (e) => { // ⚠️ Nota el 'async' aquí
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 1. Feedback visual (Para que sepa que está pensando)
+        // 1. Feedback Visual (Para que Roxana vea que está trabajando)
         const btnSubmit = form.querySelector('button[type="submit"]');
         const originalText = btnSubmit.textContent;
-        btnSubmit.textContent = "Subiendo a la nube...";
+        btnSubmit.textContent = "Subiendo fotos a la nube... (Espera)";
         btnSubmit.disabled = true;
 
-        // 2. Preparar los datos
-        const id = document.getElementById('artist-id').value;
-        if (currentGallery.length === 0) currentGallery.push("https://via.placeholder.com/400?text=Sin+Foto");
-
-        const toTitleCase = (str) => {
-            return str.replace(/\w\S*/g, (txt) => {
-                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
-        };
-
-       const artistData = {
-            // ⚠️ AQUÍ ESTABA EL FALLO: Faltaba usar la función 'toTitleCase(...)'
-            name: toTitleCase(document.getElementById('artist-name').value),
-            category: toTitleCase(document.getElementById('artist-category').value),
-            zone: toTitleCase(document.getElementById('artist-zone').value),
-            
-            description: document.getElementById('description').value, // Este NO se toca (queremos libertad)
-            images: currentGallery,
-            videoUrl: document.getElementById('social-youtube').value, 
-            videoUrl2: document.getElementById('video2') ? document.getElementById('video2').value : "",
-            videoUrl3: document.getElementById('video3') ? document.getElementById('video3').value : "",
-            // Estos campos son obligatorios para que no falle la web luego
-            isFeatured: false, 
-            homeDescription: "",
-            socials: {
-                instagram: document.getElementById('social-instagram').value,
-                facebook: document.getElementById('social-facebook').value,
-                website: document.getElementById('social-website').value,
-                //youtube: document.getElementById('social-youtube').value,
-            }
-        };
-
         try {
+            // ============================================================
+            // 🚀 FASE 1: SUBIDA DE FOTOS (La Solución al Error)
+            // ============================================================
+            let finalImageUrls = [];
+
+            // Si no hay fotos, ponemos una de relleno
+            if (currentGallery.length === 0) {
+                finalImageUrls.push("https://via.placeholder.com/400?text=Sin+Foto");
+            } else {
+                // Recorremos todas las fotos que ha puesto Roxana
+                for (const imgData of currentGallery) {
+                    
+                    // CASO A: Es una foto que ya estaba subida (es un link http...)
+                    if (imgData.startsWith('http')) {
+                        finalImageUrls.push(imgData); // La guardamos tal cual
+                    } 
+                    // CASO B: Es una foto NUEVA (es código Base64 larguísimo)
+                    else {
+                        // 1. Convertimos el código base64 a un archivo real (Blob)
+                        const blob = await (await fetch(imgData)).blob();
+                        
+                        // 2. Creamos un nombre único para que no se sobrescriban
+                        // Ej: artists/1782323_pepito.jpg
+                        const filename = `artists/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                        
+                        // 3. Decimos DÓNDE la vamos a guardar en el almacén
+                        const storageRef = ref(storage, filename);
+                        
+                        // 4. ¡SUBIMOS EL ARCHIVO! ☁️
+                        const snapshot = await uploadBytes(storageRef, blob);
+                        
+                        // 5. Pedimos el LINK público para verlo en la web
+                        const downloadUrl = await getDownloadURL(snapshot.ref);
+                        
+                        // 6. Guardamos el link en nuestra lista
+                        finalImageUrls.push(downloadUrl);
+                    }
+                }
+            }
+
+            // ============================================================
+            // 📝 FASE 2: PREPARAR DATOS DEL ARTISTA
+            // ============================================================
+            const id = document.getElementById('artist-id').value;
+            
+            // Función para poner Mayúsculas Bonitas
+            const toTitleCase = (str) => {
+                return str.replace(/\w\S*/g, (txt) => {
+                    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+                });
+            };
+
+            const artistData = {
+                name: toTitleCase(document.getElementById('artist-name').value),
+                category: toTitleCase(document.getElementById('artist-category').value),
+                zone: toTitleCase(document.getElementById('artist-zone').value),
+                description: document.getElementById('description').value,
+                
+                // ✅ AQUÍ ESTÁ EL CAMBIO: Guardamos LINKS cortos, no fotos gigantes
+                images: finalImageUrls, 
+                
+                videoUrl: document.getElementById('social-youtube').value, 
+                videoUrl2: document.getElementById('video2') ? document.getElementById('video2').value : "",
+                videoUrl3: document.getElementById('video3') ? document.getElementById('video3').value : "",
+                
+                // Campos obligatorios internos
+                isFeatured: false, 
+                homeDescription: "",
+                socials: {
+                    instagram: document.getElementById('social-instagram').value,
+                    facebook: document.getElementById('social-facebook').value,
+                    website: document.getElementById('social-website').value,
+                }
+            };
+
+            // ============================================================
+            // 💾 FASE 3: GUARDAR EN LA BASE DE DATOS (El "Sobre")
+            // ============================================================
+            
             if (id) {
-                // --- MODO EDITAR (ACTIVADO) ☁️ ---
+                // --- MODO EDITAR ---
                 const docRef = doc(db, "artists", id);
                 
-                // ⚠️ TRUCO DE SEGURIDAD:
-                // Hacemos una copia de los datos del formulario, pero borramos 
-                // las propiedades 'isFeatured' y 'homeDescription'.
-                // ¿Por qué? Para que al editar el nombre o la foto, NO se nos borre
-                // si el artista estaba en portada o tenía una frase especial.
+                // Truco: Copiamos los datos pero protegemos lo que no queremos borrar
                 const updateData = { ...artistData };
                 delete updateData.isFeatured;
                 delete updateData.homeDescription;
-                // delete updateData.order; // (Opcional, por si acaso)
+                
+                // Recuperamos el estado antiguo para no perderlo
+                const oldArtist = artistsData.find(a => a.id === id);
+                if(oldArtist) {
+                    updateData.isFeatured = oldArtist.isFeatured;
+                    updateData.homeDescription = oldArtist.homeDescription || "";
+                    updateData.order = oldArtist.order; // Mantenemos su posición en portada
+                }
 
                 await updateDoc(docRef, updateData);
-                
-                console.log("✅ Artista actualizado en la nube");
+                console.log("✅ Artista actualizado con éxito");
                 alert("¡Ficha modificada correctamente!");
-                loadArtistsFromCloud(); // Refresca la pantalla
                 
             } else {
-                // --- MODO CREAR (NUEVO) ☁️ ---
-                // Aquí ocurre la magia: 'addDoc' envía los datos a Google
-                const docRef = await addDoc(collection(db, "artists"), artistData);
-                console.log("✅ Artista guardado en Firestore con ID: ", docRef.id);
+                // --- MODO CREAR NUEVO ---
+                await addDoc(collection(db, "artists"), artistData);
+                console.log("✅ Nuevo artista creado");
                 alert("¡Artista guardado en la nube correctamente!");
-                loadArtistsFromCloud(); // <--- AÑADE ESTA LÍNEA MÁGICA ✨
             }
 
-            // Cerrar y limpiar
-            modal.classList.remove('is-visible');
-            form.reset();
-            currentGallery = [];
-            
-            // ⚠️ OJO: La lista de atrás NO se actualizará sola todavía 
-            // porque sigue leyendo del localStorage.
-            // Eso lo arreglaremos en el siguiente paso (Lectura).
-            
+            // 4. LIMPIEZA FINAL
+            loadArtistsFromCloud(); // Recargamos la pantalla
+            modal.classList.remove('is-visible'); // Cerramos ventana
+            form.reset(); // Borramos formulario
+            currentGallery = []; // Vaciamos galería temporal
+            renderGalleryPreview();
+
         } catch (error) {
-            console.error("❌ Error al guardar en Firebase:", error);
-            alert("Hubo un error: " + error.message);
+            console.error("❌ Error grave al guardar:", error);
+            alert("Hubo un error al subir los datos: " + error.message);
         } finally {
-            // Restaurar botón
+            // Restauramos el botón pase lo que pase
             btnSubmit.textContent = originalText;
             btnSubmit.disabled = false;
         }
@@ -897,7 +962,7 @@ function initMiniCarousel() {
     if (window.carouselFrame) cancelAnimationFrame(window.carouselFrame);
 
     let scrollPos = 0;
-    const speed = 0.5; // Velocidad del desplazamiento
+    const speed = 0.8; // Velocidad del desplazamiento
 
     function animateCarousel() {
         scrollPos += speed;
