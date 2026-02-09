@@ -79,11 +79,63 @@
 
   // Caja del botón "Solicitar Presupuesto"
   &__cta-box {
-    margin-top: $spacing-xl *5;
+    margin-top: $spacing-xl *2;
     margin-bottom: $spacing-unit * 2;
     width: 100%; 
     // En escritorio podríamos querer que no sea full width, pero el btn base se adapta
   }
+}
+
+/* ESTILOS DEL CONTADOR MECÁNICO */
+.counter-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0.5rem; /* Separación con el buscador */
+    margin-top: -10px;
+}
+
+.counter-label {
+    color: #BF953F; /* El dorado de tu marca */
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.mechanical-counter {
+    display: flex;
+    gap: 5px; /* Espacio entre los números */
+}
+
+.digit {
+    display: inline-block;
+    width: 30px;
+    height: 40px;
+    background-color: #111; /* Fondo casi negro */
+    color: #e1d6d6;            /* Número blanco */
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 45px;
+    text-align: center;
+    border-radius: 4px;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    font-family: 'Courier New', monospace; /* Fuente tipo máquina */
+    overflow: hidden;
+}
+
+/* El truco de la línea en medio para parecer mecánico */
+.digit::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1.5px;
+    background: rgba(0, 0, 0, 0.3); /* Línea sutil de corte */
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1); /* Brillo debajo */
 }
 
 // --- BUSCADOR ---

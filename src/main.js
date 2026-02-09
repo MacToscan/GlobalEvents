@@ -72,6 +72,8 @@ async function loadArtistsFromCloud() {
       loadArtistProfile(); 
 
       initMiniCarousel();
+
+      updateCounter(artistsData.length);
   
     } catch (error) {
       console.error("❌ Error al descargar datos:", error);
@@ -977,6 +979,53 @@ function initMiniCarousel() {
     }
 
     window.carouselFrame = requestAnimationFrame(animateCarousel);
+}
+
+// ==========================================
+// 12. CONTADOR MECÁNICO 🔢 (CORREGIDO)
+// ==========================================
+
+function updateCounter(total) {
+    const counterContainer = document.getElementById('total-artists-counter');
+    if (!counterContainer) return;
+
+    // 1. Configuración
+    const finalNumber = total;
+    const duration = 1500; // 1.5 segundos de animación
+    let startTimestamp = null;
+
+    // 2. Función de Animación (Se ejecuta en cada frame)
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        
+        // Calculamos cuánto hemos avanzado (de 0.0 a 1.0)
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        
+        // Calculamos el número actual basado en el progreso
+        // Ej: Si vamos por la mitad, y el total es 100, currentNum será 50.
+        const currentNum = Math.floor(progress * finalNumber);
+        
+        // Ahora le decimos: "Rellena SIEMPRE con ceros hasta tener 3 cifras"
+        const displayNum = currentNum.toString().padStart(3, '0');
+        
+        // Pintamos las cajitas negras
+        counterContainer.innerHTML = displayNum.split('').map(n => 
+            `<span class="digit">${n}</span>`
+        ).join('');
+
+        // Si no hemos terminado, seguimos animando
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            // Asegurarnos de que el número final es exacto al terminar
+             counterContainer.innerHTML = finalNumber.toString().padStart(3, '0').split('').map(n => 
+                `<span class="digit">${n}</span>`
+            ).join('');
+        }
+    };
+
+    // Arrancamos la animación
+    window.requestAnimationFrame(step);
 }
 
 
