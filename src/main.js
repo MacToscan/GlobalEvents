@@ -809,40 +809,56 @@ window.logout = () => {
 };
 
 // ==========================================
-// 9. SEGURIDAD CONTACTO (HONEYPOT ANTI-BOTS)
+// 9. FORMULARIO DE CONTACTO (CONEXIÓN REAL NETLIFY) 📧
 // ==========================================
 
 const contactForm = document.getElementById('contact-form');
 
 if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
-        e.preventDefault(); // Paramos el envío un momento
+        e.preventDefault(); // Evitamos que la página se recargue
 
-        // 1. COMPROBACIÓN DE SEGURIDAD
+        // 1. SEGURIDAD ANTI-ROBOTS
         const trap = document.getElementById('honeypot-field');
-        
-        // Si el campo trampa tiene algo escrito... ¡ES UN ROBOT! 🤖
         if (trap && trap.value !== "") {
-            console.warn('Bot detectado. Envío bloqueado.');
-            return; // Cortamos aquí. No se envía nada.
+            console.warn('Bot detectado.');
+            return;
         }
 
-        // 2. SIMULACIÓN DE ENVÍO (Para Roxana)
-        // Aquí iría tu código real de envío (Formspree, EmailJS, etc.)
+        // 2. EFECTO VISUAL "ENVIANDO..."
         const btn = contactForm.querySelector('button[type="submit"]');
         const originalText = btn.textContent;
-        
         btn.textContent = 'Enviando...';
         btn.style.opacity = '0.7';
         btn.disabled = true;
 
-        setTimeout(() => {
-            alert('¡Mensaje enviado correctamente! Gracias por contactar.');
-            contactForm.reset(); // Limpiamos el formulario
+        // 3. PREPARAMOS LOS DATOS
+        // Netlify necesita que los datos vayan en formato "application/x-www-form-urlencoded"
+        const myFormData = new FormData(contactForm);
+        const data = new URLSearchParams(myFormData).toString();
+
+        // 4. ENVÍO REAL A NETLIFY 🚀
+        fetch("/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: data
+        })
+        .then(() => {
+            // ÉXITO ✅
+            alert('¡Mensaje enviado con éxito! Nos pondremos en contacto pronto.');
+            contactForm.reset(); 
+        })
+        .catch((error) => {
+            // ERROR ❌
+            console.error('Error:', error);
+            alert('Hubo un error al enviar. Por favor, escribe directamente a info@rdglobalevents.com');
+        })
+        .finally(() => {
+            // RESTAURAMOS EL BOTÓN
             btn.textContent = originalText;
             btn.style.opacity = '1';
             btn.disabled = false;
-        }, 1500);
+        });
     });
 }
 
