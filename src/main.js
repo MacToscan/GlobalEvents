@@ -888,7 +888,7 @@ if (typeof Lenis !== 'undefined') {
 }
 
 // ==========================================
-// 11. CARRUSEL INFINITO (LÓGICA DE BARAJA) 🎠
+// 11. CARRUSEL INFINITO (LÓGICA MATEMÁTICA PRECISA 📐)
 // ==========================================
 
 function initMiniCarousel() {
@@ -896,53 +896,41 @@ function initMiniCarousel() {
     const section = document.querySelector('.other-talents-section');
     if (!track) return;
 
-    // 1. OBTENER LISTA BASE (Solo los NO destacados)
+    // 1. OBTENER LISTA BASE (Igual que antes)
     let baseList = artistsData.filter(a => !a.isFeatured);
 
-    // Si no hay nadie, ocultamos la sección y nos vamos
     if (baseList.length === 0) {
         if (section) section.style.display = 'none';
         return;
     }
 
-    // 2. CONSTRUIR LA LISTA DE VISUALIZACIÓN ("BARAJA INTELIGENTE")
-    // Queremos generar una lista lo suficientemente larga para que haya scroll,
-    // pero respetando el ciclo: "No repetir hasta mostrar todos".
-    
+    // 2. CONSTRUIR BARAJA (Igual que antes)
     let finalDisplayList = [];
-    const minItemsNeeded = 12; // Queremos tener al menos 12 tarjetas en cola para que ruede bien
+    const minItemsNeeded = 12; 
 
-    // Función para barajar una copia de la lista (Fisher-Yates simplificado)
     const getShuffledBatch = () => {
         return [...baseList].sort(() => Math.random() - 0.5);
     };
 
-    // Agregamos el primer lote
     finalDisplayList = getShuffledBatch();
 
-    // Seguimos agregando lotes completos hasta tener suficientes items
     while (finalDisplayList.length < minItemsNeeded) {
         let nextBatch = getShuffledBatch();
-
-        // 🧠 LA CLAVE ANTI-REPETICIÓN: 
-        // Chequeamos la "costura": Si el último del lote anterior es igual al primero del nuevo.
-        // Ejemplo: Lote 1 acaba en [Pepe]. Lote 2 empieza por [Pepe].
         if (finalDisplayList.length > 0 && nextBatch.length > 1) {
             const lastArtist = finalDisplayList[finalDisplayList.length - 1];
             const firstNextArtist = nextBatch[0];
-
             if (lastArtist.id === firstNextArtist.id) {
-                // Si coinciden, movemos el primero del nuevo lote al final.
-                // Así: [Pepe] + [Pepe, Juan] se convierte en [Pepe] + [Juan, Pepe]
                 nextBatch.push(nextBatch.shift());
             }
         }
-
         finalDisplayList = [...finalDisplayList, ...nextBatch];
     }
 
+    // Guardamos cuántas cartas tiene UN SET completo
+    const singleSetCount = finalDisplayList.length;
+
     // 3. PINTAR LAS TARJETAS
-    track.innerHTML = finalDisplayList.map(artist => `
+    const cardsHTML = finalDisplayList.map(artist => `
         <a href="/artist.html?id=${artist.id}" class="mini-card" style="text-decoration:none;">
             <div class="mini-card__img-wrapper">
                 <img src="${artist.images[0]}" alt="${artist.name}" class="mini-card__img" loading="lazy">
@@ -955,23 +943,73 @@ function initMiniCarousel() {
         </a>
     `).join('');
 
-    // 4. ANIMACIÓN INFINITA
-    // Clonamos el HTML generado para crear el efecto de bucle visual
-    const wrapper = document.querySelector('.mini-carousel-wrapper');
-    track.innerHTML += track.innerHTML; // Duplicamos todo lo que acabamos de generar
+    // 👇 CAMBIO 1: Duplicamos MUCHAS veces (6 copias)
+    // Esto asegura que la pista sea larguísima y nunca te choques con el final visualmente
+    track.innerHTML = cardsHTML.repeat(6);
 
-    // Cancelamos animación anterior si existiera para no acelerar
+    track.style.display = 'flex';
+    track.style.width = 'max-content'; 
+
+    // ======================================================
+    // LOGICA DE MOVIMIENTO Y FLECHAS
+    // ======================================================
+    const wrapper = document.querySelector('.mini-carousel-wrapper');
     if (window.carouselFrame) cancelAnimationFrame(window.carouselFrame);
 
     let scrollPos = 0;
-    const speed = 0.8; // Velocidad del desplazamiento
+    const normalSpeed = 0.8; 
+    const fastSpeed = 6.0;   
+    let currentSpeed = normalSpeed;
+
+    const btnPrev = document.getElementById('mini-prev');
+    const btnNext = document.getElementById('mini-next');
+    const goFastFwd = () => currentSpeed = fastSpeed;
+    const goFastBack = () => currentSpeed = -fastSpeed; 
+    const resetSpeed = () => currentSpeed = normalSpeed;
+
+    if(btnNext) {
+        btnNext.addEventListener('mousedown', goFastFwd);
+        btnNext.addEventListener('mouseup', resetSpeed);
+        btnNext.addEventListener('mouseleave', resetSpeed);
+        btnNext.addEventListener('touchstart', (e) => { e.preventDefault(); goFastFwd(); });
+        btnNext.addEventListener('touchend', resetSpeed);
+    }
+
+    if(btnPrev) {
+        btnPrev.addEventListener('mousedown', goFastBack);
+        btnPrev.addEventListener('mouseup', resetSpeed);
+        btnPrev.addEventListener('mouseleave', resetSpeed);
+        btnPrev.addEventListener('touchstart', (e) => { e.preventDefault(); goFastBack(); });
+        btnPrev.addEventListener('touchend', resetSpeed);
+    }
 
     function animateCarousel() {
-        scrollPos += speed;
+        scrollPos += currentSpeed;
         
-        // Punto de reinicio invisible
-        if (scrollPos >= track.scrollWidth / 2) {
-            scrollPos = 0;
+        // 👇 CAMBIO 2: CÁLCULO DINÁMICO PRECISO
+        // En vez de dividir el total por 4 (que falla por los huecos),
+        // calculamos cuánto ocupa EXACTAMENTE un set de cartas midiendo la primera.
+        
+        if (track.firstElementChild) {
+            const cardWidth = track.firstElementChild.getBoundingClientRect().width;
+            // Sumamos un pequeño margen estimado si usas 'gap' en CSS (aprox 20px) o lo sacamos del estilo
+            const style = window.getComputedStyle(track);
+            const gap = parseFloat(style.gap) || 0; // Leemos el gap real del CSS
+            
+            // Ancho real de UN bloque de artistas
+            const singleSetWidth = (cardWidth + gap) * singleSetCount;
+
+            // Lógica Infinita SUPER SUAVE (restando, no reseteando a 0)
+            if (singleSetWidth > 0) {
+                // Si pasamos el ancho de un set, restamos ese ancho (bucle invisible)
+                if (scrollPos >= singleSetWidth) {
+                    scrollPos -= singleSetWidth;
+                }
+                // Si vamos hacia atrás y pasamos de 0, sumamos el ancho (bucle invisible)
+                if (scrollPos <= 0) {
+                    scrollPos += singleSetWidth;
+                }
+            }
         }
         
         if(wrapper) wrapper.scrollLeft = scrollPos;
@@ -980,7 +1018,6 @@ function initMiniCarousel() {
 
     window.carouselFrame = requestAnimationFrame(animateCarousel);
 }
-
 // ==========================================
 // 12. CONTADOR MECÁNICO 🔢 (CORREGIDO)
 // ==========================================
