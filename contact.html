@@ -91,38 +91,37 @@
 
               <div class="social-links-contact">
                 <a href="https://www.instagram.com/globaleventsoficial?igsh=MWc5NWdkcXg5eXo3Zw==" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://www.facebook.com/share/1BgHAZ2Pm5/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-            <a href="https://www.tiktok.com/@globaleventsoficial?_r=1&_t=ZN-93GNXXQr7sx" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                <a href="https://www.facebook.com/share/1BgHAZ2Pm5/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                <a href="https://www.tiktok.com/@globaleventsoficial?_r=1&_t=ZN-93GNXXQr7sx" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
               </div>
             </div>
 
-           <form class="contact-form" id="contact-form" name="contact" method="POST" data-netlify="true">
-  
-  <input type="hidden" name="form-name" value="contact" />
+            <div class="contact-form-wrapper">
+              <form class="contact-form" id="contact-form" name="contact" method="POST" data-netlify="true">
+                
+                <input type="hidden" name="form-name" value="contact" />
+                <div style="position: absolute; left: -9999px; opacity: 0;">
+                  <label for="honeypot-field">Si eres humano, deja este campo vacío</label>
+                  <input type="text" id="honeypot-field" name="bot-field" tabindex="-1" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label for="name">Nombre completo</label>
+                  <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required>
+                </div>
 
-  <div class="form-group">
-    <label for="name">Nombre completo</label>
-    <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required>
-  </div>
+                <div class="form-group">
+                  <label for="email">Correo electrónico</label>
+                  <input type="email" id="email" name="email" placeholder="Ej: hola@correo.com" required>
+                </div>
 
-  <div style="position: absolute; left: -9999px; opacity: 0;">
-    <label for="honeypot-field">Si eres humano, deja este campo vacío</label>
-    <input type="text" id="honeypot-field" name="bot-field" tabindex="-1" autocomplete="off">
-  </div>
+                <div class="form-group">
+                  <label for="message">Cuéntanos tu idea</label>
+                  <textarea id="message" name="message" placeholder="¿Qué tipo de evento es? ¿Fecha? ¿Qué necesitas?" required></textarea>
+                </div>
 
-  <div class="form-group">
-    <label for="email">Correo electrónico</label>
-    <input type="email" id="email" name="email" placeholder="Ej: hola@correo.com" required>
-  </div>
+                <button type="submit" class="btn btn--gold btn--full">Enviar Mensaje</button>
 
-  <div class="form-group">
-    <label for="message">Cuéntanos tu idea</label>
-    <textarea id="message" name="message" placeholder="¿Qué tipo de evento es? ¿Fecha? ¿Qué necesitas?" required></textarea>
-  </div>
-
-  <button type="submit" class="btn btn--gold btn--full">Enviar Mensaje</button>
-
-</form>
+              </form>
             </div>
 
           </div>
