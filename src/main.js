@@ -713,7 +713,9 @@ if (form) {
                 if(oldArtist) {
                     updateData.isFeatured = oldArtist.isFeatured;
                     updateData.homeDescription = oldArtist.homeDescription || "";
-                    updateData.order = oldArtist.order; // Mantenemos su posición en portada
+                    if (oldArtist && oldArtist.order !== undefined) {
+                    updateData.order = oldArtist.order;
+                    }
                 }
 
                 await updateDoc(docRef, updateData);
